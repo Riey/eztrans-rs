@@ -70,7 +70,7 @@ impl EzTransLib {
                 let (res, _env, errors) = EUC_KR.decode(ret.as_bytes());
 
                 if errors {
-                    Err(format!("Decode [{:?}] from EUC_KR failed", res.as_ref()))
+                    Err(format!("Decode [{:?}] from EUC_KR failed", ret.as_bytes()))
                 } else {
                     Ok(res.into_owned())
                 }
