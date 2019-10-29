@@ -3,7 +3,10 @@
 extern crate libloading as lib;
 extern crate encoding_rs;
 
-use encoding_rs::*;
+use encoding_rs::{
+    SHIFT_JIS,
+    EUC_KR,
+};
 
 use std::os::raw::{
     c_char,
