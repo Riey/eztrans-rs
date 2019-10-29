@@ -1,8 +1,11 @@
 #![allow(non_camel_case_types)]
 
 extern crate libloading as lib;
+
+#[cfg(feature = "encoding")]
 extern crate encoding_rs;
 
+#[cfg(feature = "encoding")]
 use encoding_rs::{
     SHIFT_JIS,
     EUC_KR,
@@ -60,6 +63,7 @@ impl EzTransLib {
         }
     }
 
+    #[cfg(feature = "encoding")]
     pub fn translate(&self, original_str: &str) -> Result<String, String> {
         unsafe {
             let (res, _enc, errors) = SHIFT_JIS.encode(original_str);
@@ -67,8 +71,7 @@ impl EzTransLib {
             if errors {
                 Err(format!("Encode [{}] to SHIFT_JIS failed", original_str))
             } else {
-                let ret = (self.translate_fn)(0, res.as_ref().as_ptr() as _);
-                let ret = CString::from_raw(ret);
+                let ret = self.translate_raw(res.as_ref());
 
                 let (res, _env, errors) = EUC_KR.decode(ret.as_bytes());
 
@@ -78,6 +81,14 @@ impl EzTransLib {
                     Ok(res.into_owned())
                 }
             }
+        }
+    }
+
+    #[inline]
+    pub fn translate_raw(&self, original_str: &[u8]) -> CString {
+        unsafe {
+            let ret = (self.translate_fn)(0, original_str.as_ptr() as _);
+            CString::from_raw(ret)
         }
     }
 }
