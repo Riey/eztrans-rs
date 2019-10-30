@@ -32,25 +32,10 @@ impl<'a> EzTransLib<'a> {
         }
     }
 
-    #[cfg(feature = "encoding")]
-    pub fn translate(&self, original_str: &str) -> Result<String, String> {
-        let (res, _enc, errors) = SHIFT_JIS.encode(original_str);
-
-        if errors {
-            Err(format!("Encode [{}] to SHIFT_JIS failed", original_str))
-        } else {
-            let ret = self.translate_raw(res.as_ref());
-
-            let (res, _) = EUC_KR.decode_without_bom_handling(ret.as_bytes());
-
-            Ok(res.into_owned())
-        }
-    }
-
     #[inline]
-    pub fn translate_raw(&self, original_str: &[u8]) -> EzString {
+    pub fn translate_raw(&self, shift_jis_str: &CStr) -> EzString {
         unsafe {
-            let ret = (self.J2K_TranslateMMNT)(0, original_str.as_ptr() as _);
+            let ret = (self.J2K_TranslateMMNT)(0, shift_jis_str.as_ptr() as _);
             EzString(CStr::from_ptr(ret))
         }
     }
