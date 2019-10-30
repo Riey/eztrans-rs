@@ -14,6 +14,7 @@ use encoding_rs::{
 use std::os::raw::{
     c_char,
     c_int,
+    c_void,
 };
 
 #[cfg(not(windows))]
@@ -22,6 +23,7 @@ use lib::os::unix::Symbol as LibSymbol;
 use lib::os::windows::Symbol as LibSymbol;
 
 use std::ffi::{
+    CStr,
     CString,
     OsStr,
     NulError,
@@ -65,30 +67,24 @@ impl EzTransLib {
 
     #[cfg(feature = "encoding")]
     pub fn translate(&self, original_str: &str) -> Result<String, String> {
-        unsafe {
-            let (res, _enc, errors) = SHIFT_JIS.encode(original_str);
+        let (res, _enc, errors) = SHIFT_JIS.encode(original_str);
 
-            if errors {
-                Err(format!("Encode [{}] to SHIFT_JIS failed", original_str))
-            } else {
-                let ret = self.translate_raw(res.as_ref());
+        if errors {
+            Err(format!("Encode [{}] to SHIFT_JIS failed", original_str))
+        } else {
+            let ret = self.translate_raw(res.as_ref());
 
-                let (res, _env, errors) = EUC_KR.decode(ret.as_bytes());
+            let (res, _) = EUC_KR.decode_without_bom_handling(ret.as_bytes());
 
-                if errors {
-                    Err(format!("Decode [{:?}] from EUC_KR failed", ret.as_bytes()))
-                } else {
-                    Ok(res.into_owned())
-                }
-            }
+            Ok(res.into_owned())
         }
     }
 
     #[inline]
-    pub fn translate_raw(&self, original_str: &[u8]) -> CString {
+    pub fn translate_raw(&self, original_str: &[u8]) -> EzString {
         unsafe {
             let ret = (self.translate_fn)(0, original_str.as_ptr() as _);
-            CString::from_raw(ret)
+            EzString(CStr::from_ptr(ret))
         }
     }
 }
@@ -98,6 +94,22 @@ impl Drop for EzTransLib {
         unsafe {
             (self.terminate_fn)();
         }
+    }
+}
+
+pub struct EzString(&'static CStr);
+
+impl Drop for EzString {
+    fn drop(&mut self) {
+        unsafe {
+            libc::free(self.0.as_ptr() as *mut c_char as *mut c_void);
+        }
+    }
+}
+
+impl EzString {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.to_bytes()
     }
 }
 
