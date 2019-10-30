@@ -10,7 +10,8 @@ default = []
 encoding = ["encoding_rs"]
 
 [dependencies]
-encoding_rs = { version = "0.8.17", optional = true, features = ["simd-accel", "fast-legacy-encode"] }
+#encoding_rs = { version = "0.8.17", optional = true, features = ["simd-accel", "fast-legacy-encode"] }
+encoding_rs = { version = "0.8.17", optional = true }
 libc = "0.2.65"
 dlopen = "0.1.8"
 const-cstr = "0.3.0"

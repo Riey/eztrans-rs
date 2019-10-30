@@ -19,16 +19,16 @@ pub struct EzTransLib<'a> {
     J2K_Terminate: Symbol<'a, J2K_Terminate>,
 }
 
-type J2K_InitializeEx = unsafe extern "C" fn(*const c_char, *const c_char) -> c_int;
-type J2K_TranslateMMNT = unsafe extern "C" fn(c_int, *const c_char) -> *mut c_char;
-type J2K_Terminate = unsafe extern "C" fn() -> c_int;
+type J2K_InitializeEx = unsafe extern "stdcall" fn(*const c_char, *const c_char) -> c_int;
+type J2K_TranslateMMNT = unsafe extern "stdcall" fn(c_int, *const c_char) -> *mut c_char;
+type J2K_Terminate = unsafe extern "stdcall" fn() -> c_int;
 
 impl<'a> EzTransLib<'a> {
-    pub fn initialize(&self, init_str: &str, home_dir: &str) -> c_int {
+    pub fn initialize(&self, init_str: &str, home_dir: &str) {
         unsafe {
             let init_str = CString::new(init_str).unwrap();
             let home_dir = CString::new(home_dir).unwrap();
-            (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr())
+            (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr());
         }
     }
 
