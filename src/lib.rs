@@ -1,67 +1,35 @@
 #![allow(non_camel_case_types)]
-
-extern crate libloading as lib;
+#![allow(non_snake_case)]
 
 #[cfg(feature = "encoding")]
 extern crate encoding_rs;
 
 #[cfg(feature = "encoding")]
-use encoding_rs::{
-    SHIFT_JIS,
-    EUC_KR,
-};
+use encoding_rs::{EUC_KR, SHIFT_JIS};
 
-use std::os::raw::{
-    c_char,
-    c_int,
-    c_void,
-};
+use libc::{c_char, c_int, c_void};
+use dlopen::symbor::{Symbol, SymBorApi, Container};
+use dlopen_derive::SymBorApi;
 
-#[cfg(not(windows))]
-use lib::os::unix::Symbol as LibSymbol;
-#[cfg(windows)]
-use lib::os::windows::Symbol as LibSymbol;
+use std::ffi::{CStr, CString, OsStr};
 
-use std::ffi::{
-    CStr,
-    CString,
-    OsStr,
-    NulError,
-};
-
-pub struct EzTransLib {
-    #[allow(dead_code)]
-    lib: lib::Library,
-    init_fn: LibSymbol<J2K_InitializeEx>,
-    translate_fn: LibSymbol<J2K_TranslateMMNT>,
-    terminate_fn: LibSymbol<J2K_Terminate>,
+#[derive(SymBorApi)]
+pub struct EzTransLib<'a> {
+    J2K_InitializeEx: Symbol<'a, J2K_InitializeEx>,
+    J2K_TranslateMMNT: Symbol<'a, J2K_TranslateMMNT>,
+    J2K_Terminate: Symbol<'a, J2K_Terminate>,
 }
 
 type J2K_InitializeEx = unsafe extern "C" fn(*const c_char, *const c_char) -> c_int;
 type J2K_TranslateMMNT = unsafe extern "C" fn(c_int, *const c_char) -> *mut c_char;
 type J2K_Terminate = unsafe extern "C" fn() -> c_int;
 
-impl EzTransLib {
-    pub fn new(lib: lib::Library) -> lib::Result<Self> {
+impl<'a> EzTransLib<'a> {
+    pub fn initialize(&self, init_str: &str, home_dir: &str) -> c_int {
         unsafe {
-            Ok(Self {
-                init_fn: lib.get::<J2K_InitializeEx>(stringify!(J2K_InitializeEx).as_bytes())?.into_raw(),
-                translate_fn: lib.get::<J2K_TranslateMMNT>(stringify!(J2K_TranslateMMNT).as_bytes())?.into_raw(),
-                terminate_fn: lib.get::<J2K_Terminate>(stringify!(J2K_Terminate).as_bytes())?.into_raw(),
-                lib,
-            })
-        }
-    }
-
-    pub fn load_from(dll_path: impl AsRef<OsStr>) -> lib::Result<Self> {
-        Ok(Self::new(lib::Library::new(dll_path)?)?)
-    }
-
-    pub fn initialize(&self, init_str: &str, home_dir: &str) -> Result<c_int, NulError> {
-        unsafe {
-            let init_str = CString::new(init_str)?;
-            let home_dir = CString::new(home_dir)?;
-            Ok((self.init_fn)(init_str.as_ptr(), home_dir.as_ptr()))
+            let init_str = CString::new(init_str).unwrap();
+            let home_dir = CString::new(home_dir).unwrap();
+            (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr())
         }
     }
 
@@ -83,18 +51,22 @@ impl EzTransLib {
     #[inline]
     pub fn translate_raw(&self, original_str: &[u8]) -> EzString {
         unsafe {
-            let ret = (self.translate_fn)(0, original_str.as_ptr() as _);
+            let ret = (self.J2K_TranslateMMNT)(0, original_str.as_ptr() as _);
             EzString(CStr::from_ptr(ret))
         }
     }
 }
 
-impl Drop for EzTransLib {
+impl<'a> Drop for EzTransLib<'a> {
     fn drop(&mut self) {
         unsafe {
-            (self.terminate_fn)();
+            (self.J2K_Terminate)();
         }
     }
+}
+
+pub unsafe fn load_library(dll_path: impl AsRef<OsStr>) -> Result<Container<EzTransLib<'static>>, dlopen::Error> {
+    Container::load(dll_path)
 }
 
 pub struct EzString(&'static CStr);
