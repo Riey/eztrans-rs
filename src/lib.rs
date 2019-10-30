@@ -2,16 +2,15 @@
 #![allow(non_snake_case)]
 
 #[cfg(feature = "encoding")]
-extern crate encoding_rs;
-
-#[cfg(feature = "encoding")]
 use encoding_rs::{EUC_KR, SHIFT_JIS};
 
 use libc::{c_char, c_int, c_void};
-use dlopen::symbor::{Symbol, SymBorApi, Container};
+use dlopen::symbor::{Symbol, SymBorApi};
 use dlopen_derive::SymBorApi;
+pub use dlopen::symbor::Container;
 
 use std::ffi::{CStr, CString, OsStr};
+
 
 #[derive(SymBorApi)]
 pub struct EzTransLib<'a> {
