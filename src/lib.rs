@@ -33,7 +33,7 @@ impl<'a> EzTransLib<'a> {
     }
 
     #[inline]
-    pub fn translate_raw(&self, shift_jis_str: &CStr) -> EzString {
+    pub fn translate(&self, shift_jis_str: &CStr) -> EzString {
         unsafe {
             let ret = (self.J2K_TranslateMMNT)(0, shift_jis_str.as_ptr() as _);
             EzString(CStr::from_ptr(ret))
