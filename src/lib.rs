@@ -1,15 +1,12 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-#[cfg(feature = "encoding")]
-use encoding_rs::{EUC_KR, SHIFT_JIS};
-
 use libc::{c_char, c_int, c_void};
 use dlopen::symbor::{Symbol, SymBorApi};
 use dlopen_derive::SymBorApi;
 pub use dlopen::symbor::Container;
 
-use std::ffi::{CStr, CString, OsStr};
+use std::ffi::{CStr, OsStr};
 
 
 #[derive(SymBorApi)]
@@ -24,20 +21,14 @@ type J2K_TranslateMMNT = unsafe extern "stdcall" fn(c_int, *const c_char) -> *mu
 type J2K_Terminate = unsafe extern "stdcall" fn() -> c_int;
 
 impl<'a> EzTransLib<'a> {
-    pub fn initialize(&self, init_str: &str, home_dir: &str) {
-        unsafe {
-            let init_str = CString::new(init_str).unwrap();
-            let home_dir = CString::new(home_dir).unwrap();
-            (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr());
-        }
+    pub unsafe fn initialize(&self, init_str: &CStr, home_dir: &CStr) {
+        (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr());
     }
 
     #[inline]
-    pub fn translate(&self, shift_jis_str: &CStr) -> EzString {
-        unsafe {
-            let ret = (self.J2K_TranslateMMNT)(0, shift_jis_str.as_ptr() as _);
-            EzString(CStr::from_ptr(ret))
-        }
+    pub unsafe fn translate(&self, shift_jis_str: &CStr) -> EzString {
+        let ret = (self.J2K_TranslateMMNT)(0, shift_jis_str.as_ptr() as _);
+        EzString(CStr::from_ptr(ret))
     }
 }
 
