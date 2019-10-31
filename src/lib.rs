@@ -21,8 +21,11 @@ type J2K_TranslateMMNT = unsafe extern "stdcall" fn(c_int, *const c_char) -> *mu
 type J2K_Terminate = unsafe extern "stdcall" fn() -> c_int;
 
 impl<'a> EzTransLib<'a> {
-    pub unsafe fn initialize(&self, init_str: &CStr, home_dir: &CStr) {
-        (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr());
+    /// return false when failed
+    pub unsafe fn initialize(&self, init_str: &CStr, home_dir: &CStr) -> bool {
+        let ret = (self.J2K_InitializeEx)(init_str.as_ptr(), home_dir.as_ptr());
+
+        ret == 1
     }
 
     #[inline]
