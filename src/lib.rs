@@ -33,13 +33,10 @@ impl<'a> EzTransLib<'a> {
         let ret = (self.J2K_TranslateMMNT)(0, shift_jis_str.as_ptr() as _);
         EzString(CStr::from_ptr(ret))
     }
-}
 
-impl<'a> Drop for EzTransLib<'a> {
-    fn drop(&mut self) {
-        unsafe {
-            (self.J2K_Terminate)();
-        }
+    #[inline]
+    pub unsafe fn terminate(&self) {
+        (self.J2K_Terminate)();
     }
 }
 
@@ -63,10 +60,3 @@ impl EzString {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
